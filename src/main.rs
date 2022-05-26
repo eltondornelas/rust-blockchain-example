@@ -3,6 +3,7 @@ use log::{error, warn};
 
 // holds the application state
 pub struct App {
+    // todo: i want to try with generic later on
     pub blocks: Vec<Block>,
 }
 
@@ -83,6 +84,45 @@ impl App {
             self.blocks.push(block);
         } else {
             error!("could not add block - invalid");
+        }
+    }
+
+    // validating whole chain
+    fn is_chain_valid(&self, chain: &[Block]) -> bool {
+        for i in 0..chain.len() {
+            if i == 0 {
+                // ignoring the genesis block
+                continue;
+            }
+
+            let first = chain.get(i - 1).expect("has to exist");
+            let second = chain.get(i).expect("has to exist");
+
+            if !self.is_block_valid(second, first) {
+                return false;
+            }
+        }
+        true
+    }
+
+    // We always choose the longest valid chain
+    fn choose_chain(&mut self, local: Vec<Block>, remote: Vec<Block>) -> Vec<Block> {
+        // todo: i want to try with generic later on
+        let is_local_valid = self.is_chain_valid(&local);
+        let is_remote_valid = self.is_chain_valid(&remote);
+
+        if is_local_valid && is_remote_valid {
+            if local.len() >= remote.len() {
+                local
+            } else {
+                remote
+            }
+        } else if is_remote_valid && !is_local_valid {
+            remote
+        } else if !is_remote_valid && is_local_valid {
+            local
+        } else {
+            panic!("local and remote chains are both invalid");
         }
     }
 }
