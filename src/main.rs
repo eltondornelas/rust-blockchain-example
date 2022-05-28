@@ -1,6 +1,10 @@
 use chrono::Utc;
+use libp2p::identity::Keypair;
 use log::{error, info, warn};
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+
+mod p2p;
 
 // holds the application state
 pub struct App {
@@ -19,7 +23,6 @@ pub struct Block {
     pub data: String,
     pub nonce: u64,
 }
-
 
 /*
 *   Basis for our simplistic mining scheme.
@@ -53,7 +56,9 @@ impl App {
             return false;
         } else if !hash_to_binary_representation(
             &hex::decode(&block.hash).expect("can decode from hex"),
-        ).starts_with(DIFFICULTY_PREFIX) {
+        )
+        .starts_with(DIFFICULTY_PREFIX)
+        {
             warn!("block with id: {} has invalid difficulty", block.id);
             return false;
         } else if block.id != previous_block.id + 1 {
@@ -62,15 +67,13 @@ impl App {
                 block.id, previous_block.id
             );
             return false;
-        } else if hex::encode(
-            calculate_hash(
-                block.id,
-                block.timestamp,
-                &block.previous_hash,
-                &block.data,
-                block.nonce,
-            )
-        ) != block.hash
+        } else if hex::encode(calculate_hash(
+            block.id,
+            block.timestamp,
+            &block.previous_hash,
+            &block.data,
+            block.nonce,
+        )) != block.hash
         {
             warn!("block with id: {} has invalid hash", block.id);
             return false;
